@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NB Test - DTM Platformasi</title>
+    <!-- JsPDF kutubxonasi (Sertifikat yuklash uchun) -->
+    <script src="https://cloudflare.com"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { 
+            background: url('https://ibb.co') no-repeat center center fixed; 
+            background-size: cover;
+            color: #fff;
+            min-height: 250vh; /* Sayt 2-3 betlik bo'lib pastga tushishi uchun */
+        }
+        .overlay { background: rgba(10, 25, 47, 0.75); min-height: 250vh; width: 100%; padding-bottom: 50px; }
+        header { background: rgba(30, 58, 138, 0.9); color: white; padding: 20px; text-align: center; font-size: 26px; font-weight: bold; border-bottom: 3px solid #10b981; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .container { max-width: 700px; margin: 50px auto; background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(10px); padding: 35px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 8px 32px rgba(0,0,0,0.3); color: #fff; }
+        h2 { margin-bottom: 25px; text-align: center; color: #10b981; text-shadow: 1px 1px 5px rgba(0,0,0,0.5); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 16px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; font-size: 16px; background: rgba(0,0,0,0.5); color: #fff; }
+        input::placeholder { color: #ccc; }
+        button { width: 100%; padding: 14px; background-color: #10b981; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4); }
+        button:hover { background-color: #059669; transform: translateY(-2px); }
+        .hidden { display: none !important; }
+        .topic-list { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding-right: 10px; }
+        .topic-item { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); padding: 15px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-weight: 600; text-align: left; width: 100%; color: white; }
+        .topic-item:hover { background: #1e3a8a; border-color: #10b981; }
+        .timer-box { font-size: 20px; font-weight: bold; color: #ef4444; text-align: center; margin-bottom: 15px; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; display: inline-block; width: 100%; }
+        .question { font-size: 19px; font-weight: 600; margin-bottom: 20px; line-height: 1.5; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 6px; }
+        .options { list-style: none; }
+        .options li { margin-bottom: 12px; }
+        .options label { display: flex; align-items: center; padding: 12px; background: rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; transition: 0.2s; border: 1px solid rgba(255,255,255,0.1); }
+        .options label:hover { background: rgba(255,255,255,0.2); }
+        .options input { width: auto; margin-right: 12px; }
+        .nav-buttons { display: flex; justify-content: space-between; margin-top: 25px; gap: 15px; }
+        .btn-nav { background-color: #3b82f6; width: 48%; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4); }
+        .btn-nav:hover { background-color: #2563eb; }
+        .admin-section { margin-top: 40px; background: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 8px; border: 1px solid #ef4444; }
+        .table-container { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; background: #fff; color: #333; border-radius: 6px; overflow: hidden; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #1e3a8a; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="overlay">
+    <header>NB testga xush kelibsiz!</header>
+
+    <div class="container">
+        <!-- 1. LOGIN / RO'YXATDAN O'TISH -->
+        <div id="auth-box">
+            <h2>Tizimga kirish</h2>
+            <form id="reg-form">
+                <div class="form-group">
+                    <label for="username">Ism va Familiyangiz:</label>
+                    <input type="text" id="username" required placeholder="Masalan: Jamshid Olimov">
+                </div>
+                <div class="form-group">
+                    <label for="phone">Telefon raqamingiz:</label>
+                    <input type="tel" id="phone" required placeholder="Masalan: +998901234567">
+                </div>
+                <button type="submit">Ro'yxatdan o'tish</button>
+            </form>
+            <button style="margin-top: 15px; background-color: #4b5563;" onclick="toggleAdminView()">Admin Panelga o'tish</button>
+        </div>
+
+        <!-- 2. MAVZUNI QATORMA-QATOR TANLASH -->
+        <div id="topic-box" class="hidden">
+            <h2>Mavzuni tanlang</h2>
+            <div class="topic-list" id="topics-container"></div>
+        </div>
+
+        <!-- 3. TEST VA TAYMER BO'LIMI -->
+        <div id="quiz-box" class="hidden">
+            <h2 id="subject-title">Mavzu nomi</h2>
+            <div class="timer-box">⏰ Qolgan vaqt: <span id="timer-text">60:00</span></div>
+            <div style="text-align: center; margin-bottom: 10px;" id="progress-text">Savol: 1 / 100</div>
+            <div class="question" id="question-text">Savol yuklanmoqda...</div>
+            <ul class="options" id="options-list"></ul>
+            <div class="nav-buttons">
+                <button class="btn-nav" id="prev-btn" onclick="prevQuestion()">Orqaga</button>
+                <button class="btn-nav" id="next-btn" onclick="nextQuestion()">Keyingisi</button>
+            </div>
+            <button style="margin-top: 20px; background-color: #ef4444;" onclick="finishQuiz()">Testni muddatidan oldin tugatish</button>
+        </div>
+
+        <!-- 4. NATIJA VA SERTIFIKAT BERISH -->
+        <div id="result-box" class="hidden" style="text-align: center;">
+            <h2>Sizning Natijangiz</h2>
+            <div style="font-size: 48px; color: #10b981; font-weight: bold; margin: 20px 0;" id="final-score">0 / 100</div>
+            <p id="user-summary" style="margin-bottom: 25px; line-height: 1.6;"></p>
+            <p id="save-status" style="color: #3b82f6; font-weight: bold; margin-bottom: 20px;">Natija saqlanmoqda...</p>
+            <button id="cert-btn" class="hidden" style="background-color: #f59e0b; margin-bottom: 15px;" onclick="generateCertificate()">🎓 Shaxsiy Sertifikatni yuklab olish</button>
+            <button onclick="location.reload()">Bosh sahifaga qaytish</button>
+        </div>
+
+        <!-- 5. ADMIN PANEL (NATIJALARNI KO'RISH) -->
+        <div id="admin-box" class="hidden admin-section">
+            <h2>Admin Panel - Natijalar</h2>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ism va Familiya</th>
+                            <th>Telefon</th>
+                            <th>Mavzu</th>
+                            <th>Ball</th>
+                            <th>Sana</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-table-body">
+                        <!-- Ma'lumotlar bazadan kelib tushadi -->
+                    </tbody>
+                </table>
+            </div>
+            <button style="margin-top: 15px; background-color: #4b5563;" onclick="toggleAdminView()">Orqaga</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://gstatic.com";
+    import { getFirestore, collection, addDoc, getDocs } from "https://gstatic.com";
+
+    // ⚠️ FIREBASE CONFIG KODLARINGIZNI SHU YERGA JOYLANG:
+    const firebaseConfig = {
+        apiKey: "AIzaSyCHwUR4SZyKaYhpoy33quU3T3skEIda3UI",
+        authDomain: "nbacademy08.firebaseapp.com",
+        projectId: "nbacademy08",
+        storageBucket: "nbacademy08.firebasestorage.app",
+        messagingSenderId: "999821260132",
+        appId: "1:999821260132:web:953c67242a83a61329b671"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Ro'yxatdagi barcha 31 ta mavzu (Algebra va Geometriya)
+    const allTopics = [
+        "Sonlar va amallar", "Kasrlar", "Foiz", "Daraja va ildizlar", "Algebraik ifodalar",
+        "Qisqa ko‘paytirish formulalari", "Tenglamalar", "Tengsizliklar", "Tenglamalar sistemasi",
+        "Funksiyalar", "Progressiyalar (arifmetik va geometrik)", "Logarifmlar", "Ko‘sarkichli tenglamalar",
+        "Trigonometrik funksiyalar", "Asosiy formulalar", "Trigonometrik tenglamalar", "Trigonometrik ayniyatlar",
+        "Tenglamalar va tengsizliklar (Trigonometriya)", "Uchburchaklar", "Aylana va doira", "Fazoviy geometriya",
+        "To‘g‘ri to‘rtburchak, kvadrat", "Parallelogramm, romb, trapetsiya", "Pifagor teoremasi", "Yuzalar", "Hajmlar",
+        "Fazoviy jismlar (kub, prizma, piramida, silindr, konus, shar)"
+    ];
+
+    let activeQuestions = [];
+    window.currentQuizIndex = 0;
+    window.userAnswers = {};
+    let userData = { name: '', phone: '', topic: '' };
+    let timerInterval;
+    let timeLeft = 3600; // 60 daqiqa (100 ta test uchun)
+
+    // Tanlangan mavzu bo'yicha 100 ta DTM testini shakllantirish algoritmi
+    function generate100Questions(topicName) {
+        let list = [];
+        for (let i = 1; i <= 100; i++) {
+            let a = Math.floor(Math.random() * 20) + 5;
+            let b = Math.floor(Math.random() * 10) + 2;
+            let correct = a * b - b;
